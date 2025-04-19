@@ -1,6 +1,0 @@
-fastapi
-uvicorn
-python-dotenv
-PyPDF2
-python-docx
-google-genai
