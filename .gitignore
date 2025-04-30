@@ -48,6 +48,3 @@ node_modules/
 .git
 
 .github/
-
-fastapi-engine/__pycache__
-fastapi-engine/venv-3.10

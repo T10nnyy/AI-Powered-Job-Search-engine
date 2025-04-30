@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./fastapi-engine:/app
+    environment:
+      - RAPIDAPI_KEY=${RAPIDAPI_KEY}
+      - RAPIDAPI_HOST=${RAPIDAPI_HOST}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - USAJOBS_API_KEY=${USAJOBS_API_KEY}
+      - USAJOBS_USER_AGENT=${USAJOBS_USER_AGENT}
+      - NEONDB_HOST=${NEONDB_HOST}
+      - NEONDB_NAME=${NEONDB_NAME}
+      - NEONDB_USER=${NEONDB_USER}
+      - NEONDB_PASSWORD=${NEONDB_PASSWORD}
+      - NEONDB_PORT=${NEONDB_PORT}
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

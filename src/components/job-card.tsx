@@ -1,17 +1,86 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Badge } from "./ui/badge";
 import { Card, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
-import { Bookmark, Building, ExternalLink, MapPin, Clock } from "lucide-react";
+import { Bookmark, BookmarkCheck, Building, ExternalLink, MapPin, Clock } from "lucide-react";
 import { JobSearchResult } from "@/services/job-search-service";
+import { saveJob, removeSavedJob, isJobSaved } from "@/services/saved-jobs-service";
+import { useToast } from "./ui/toast";
 
 interface JobProps {
   job: JobSearchResult;
   onViewDetails?: (job: JobSearchResult) => void;
+  onApplyClick?: (job: JobSearchResult) => void; // Add this prop
 }
 
-export default function JobCard({ job, onViewDetails }: JobProps) {
+export default function JobCard({ job, onViewDetails, onApplyClick }: JobProps) {
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const { toast } = useToast();
+  
+  useEffect(() => {
+    // Check if job is already saved
+    const checkIfSaved = async () => {
+      try {
+        const isSaved = await isJobSaved(job.job_id);
+        setSaved(isSaved);
+      } catch (error) {
+        console.error("Error checking if job is saved:", error);
+      }
+    };
+    
+    checkIfSaved();
+  }, [job.job_id]);
+  
+  const handleSaveToggle = async (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click event
+    
+    try {
+      setSaving(true);
+      console.log("Attempting to save/unsave job:", job.job_id);
+      
+      if (saved) {
+        await removeSavedJob(job.job_id);
+        setSaved(false);
+        console.log("Job removed successfully");
+        toast({ 
+          message: "Job removed from saved jobs", 
+          type: "info" 
+        });
+      } else {
+        await saveJob(job);
+        setSaved(true);
+        console.log("Job saved successfully");
+        toast({ 
+          message: "Job saved successfully", 
+          type: "success" 
+        });
+      }
+    } catch (error) {
+      console.error("Error toggling job save:", error);
+      toast({ 
+        message: "Error saving job. Please try again.", 
+        type: "error" 
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Update the Apply button click handler
+  const handleApplyClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click event
+    
+    if (onApplyClick) {
+      onApplyClick(job);
+    } else {
+      // Open directly if no handler provided
+      window.open(job.job_apply_link, "_blank");
+    }
+  };
+
   return (
     <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:scale-105 bg-white dark:bg-gray-800">
       <CardContent className="p-0">
@@ -40,8 +109,14 @@ export default function JobCard({ job, onViewDetails }: JobProps) {
               variant="ghost"
               size="icon"
               className="hover:bg-gray-100 dark:hover:bg-gray-700"
+              onClick={handleSaveToggle}
+              disabled={saving}
             >
-              <Bookmark className="h-5 w-5" />
+              {saved ? (
+                <BookmarkCheck className="h-5 w-5 text-green-500" />
+              ) : (
+                <Bookmark className="h-5 w-5" />
+              )}
             </Button>
           </div>
 
@@ -114,7 +189,7 @@ export default function JobCard({ job, onViewDetails }: JobProps) {
           <Button 
             size="sm" 
             className="gap-1"
-            onClick={() => window.open(job.job_apply_link, "_blank")}
+            onClick={handleApplyClick}
           >
             Apply <ExternalLink className="h-3 w-3" />
           </Button>
